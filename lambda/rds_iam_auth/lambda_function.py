@@ -5,9 +5,9 @@ import os
 import sys
 import logging
 
-ENDPOINT = "test.caa2bd2defxp.ap-northeast-1.rds.amazonaws.com"
+ENDPOINT = "test-rds-iam-auth.caa2bd2defxp.ap-northeast-1.rds.amazonaws.com"
 PORT = "3306"
-USR = "lambda_role_for_rds"
+USR = "lambda-role-for-rds"
 REGION = "ap-northeast-1"
 DBNAME = "lag_cv"
 os.environ['LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN'] = '1'
@@ -26,12 +26,11 @@ def lambda_handler(event, context):
     # gets the credentials from .aws/credentials
     # session = boto3.Session(profile_name='default')
     client = boto3.client('rds')
-
     token = client.generate_db_auth_token(
         DBHostname=ENDPOINT, Port=PORT, DBUsername=USR, Region=REGION)
 
     conn = get_connection(token)
-    print(conn)
+    # logger.info(conn.host, conn.user)
 
     try:
         with conn.cursor() as cursor:
@@ -40,6 +39,8 @@ def lambda_handler(event, context):
             logger.info(query_results)
     except Exception as e:
         logger.info("Database connection failed due to {}".format(e))
+
+    return {"result": query_results}
 
 
 def get_connection(token):
